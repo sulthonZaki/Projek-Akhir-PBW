@@ -1,0 +1,343 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ENUM DEFINITIONS
+// ==========================================
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN_RM
+  SUPERVISOR_PRODUKSI
+  ADMIN_FG
+  MANAGER
+}
+
+enum StatusUser {
+  AKTIF
+  NONAKTIF
+}
+
+enum StatusTransaksiRM {
+  MASUK
+  KELUAR
+}
+
+enum StatusProduksi {
+  DRAFT
+  MENUNGGU_APPROVAL
+  DISETUJUI
+  DITOLAK
+}
+
+enum StatusTransaksiFG {
+  MASUK
+  KELUAR
+}
+
+enum StatusApproval {
+  PENDING
+  DISETUJUI
+  DITOLAK
+}
+
+enum JenisKemasan {
+  SAK_40KG
+  SAK_50KG
+  CURAH
+}
+
+// ==========================================
+// USER & AUTH
+// ==========================================
+
+model User {
+  id          Int        @id @default(autoincrement())
+  username    String     @unique
+  password    String
+  namaLengkap String
+  role        Role
+  status      StatusUser @default(AKTIF)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  transaksiRM       TransaksiRM[]
+  produksi          Produksi[]
+  transaksiFG       TransaksiFG[]
+  approvals         Approval[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+// ==========================================
+// MASTER DATA
+// ==========================================
+
+model Supplier {
+  id        Int      @id @default(autoincrement())
+  kode      String   @unique
+  nama      String
+  alamat    String?  @db.Text
+  telepon   String?
+  email     String?
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transaksiRM TransaksiRM[]
+
+  @@map("suppliers")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  kode      String   @unique
+  nama      String
+  alamat    String?  @db.Text
+  telepon   String?
+  email     String?
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transaksiFG TransaksiFG[]
+
+  @@map("customers")
+}
+
+model Gudang {
+  id        Int      @id @default(autoincrement())
+  kode      String   @unique
+  nama      String
+  lokasi    String?
+  tipe      String   // RM, FG, PRODUKSI
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stokRM  StokRM[]
+  stokFG  StokFG[]
+
+  @@map("gudang")
+}
+
+model JenisBahanBaku {
+  id           Int      @id @default(autoincrement())
+  kode         String   @unique
+  nama         String
+  satuan       String   // TON, KG, M3
+  stokMinimum  Float    @default(0)
+  keterangan   String?
+  aktif        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stokRM      StokRM[]
+  transaksiRM TransaksiRM[]
+  detailProduksi DetailProduksiRM[]
+
+  @@map("jenis_bahan_baku")
+}
+
+model JenisSemen {
+  id           Int          @id @default(autoincrement())
+  kode         String       @unique
+  nama         String       // Portland, PCC, dll
+  kemasan      JenisKemasan
+  beratKg      Float
+  keterangan   String?
+  aktif        Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  stokFG         StokFG[]
+  detailProduksi DetailProduksiFG[]
+  transaksiFG    TransaksiFG[]
+
+  @@map("jenis_semen")
+}
+
+// ==========================================
+// STOK
+// ==========================================
+
+model StokRM {
+  id               Int            @id @default(autoincrement())
+  jenisBahanBakuId Int
+  gudangId         Int
+  jumlah           Float          @default(0)
+  updatedAt        DateTime       @updatedAt
+
+  jenisBahanBaku JenisBahanBaku @relation(fields: [jenisBahanBakuId], references: [id])
+  gudang         Gudang         @relation(fields: [gudangId], references: [id])
+
+  @@unique([jenisBahanBakuId, gudangId])
+  @@map("stok_rm")
+}
+
+model StokFG {
+  id           Int          @id @default(autoincrement())
+  jenisSemenId Int
+  gudangId     Int
+  jumlah       Float        @default(0)
+  updatedAt    DateTime     @updatedAt
+
+  jenisSemen JenisSemen @relation(fields: [jenisSemenId], references: [id])
+  gudang     Gudang     @relation(fields: [gudangId], references: [id])
+
+  @@unique([jenisSemenId, gudangId])
+  @@map("stok_fg")
+}
+
+// ==========================================
+// TRANSAKSI RM
+// ==========================================
+
+model TransaksiRM {
+  id               Int               @id @default(autoincrement())
+  nomorDokumen     String            @unique
+  tanggal          DateTime
+  jenis            StatusTransaksiRM
+  jenisBahanBakuId Int
+  jumlah           Float
+  satuan           String
+  supplierId       Int?
+  nomorPO          String?
+  keterangan       String?           @db.Text
+  userId           Int
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  jenisBahanBaku JenisBahanBaku @relation(fields: [jenisBahanBakuId], references: [id])
+  supplier       Supplier?      @relation(fields: [supplierId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
+  approval       Approval?
+
+  @@map("transaksi_rm")
+}
+
+// ==========================================
+// PRODUKSI
+// ==========================================
+
+model Produksi {
+  id             Int            @id @default(autoincrement())
+  nomorBatch     String         @unique
+  tanggalMulai   DateTime
+  tanggalSelesai DateTime?
+  status         StatusProduksi @default(DRAFT)
+  totalOutputKg  Float?
+  efisiensi      Float?         // persentase
+  catatan        String?        @db.Text
+  userId         Int
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user           User               @relation(fields: [userId], references: [id])
+  detailRM       DetailProduksiRM[]
+  detailFG       DetailProduksiFG[]
+  approval       Approval?
+
+  @@map("produksi")
+}
+
+model DetailProduksiRM {
+  id               Int    @id @default(autoincrement())
+  produksiId       Int
+  jenisBahanBakuId Int
+  jumlahTerpakai   Float
+  satuan           String
+
+  produksi       Produksi       @relation(fields: [produksiId], references: [id], onDelete: Cascade)
+  jenisBahanBaku JenisBahanBaku @relation(fields: [jenisBahanBakuId], references: [id])
+
+  @@map("detail_produksi_rm")
+}
+
+model DetailProduksiFG {
+  id           Int    @id @default(autoincrement())
+  produksiId   Int
+  jenisSemenId Int
+  jumlahOutput Float
+  satuan       String
+
+  produksi   Produksi   @relation(fields: [produksiId], references: [id], onDelete: Cascade)
+  jenisSemen JenisSemen @relation(fields: [jenisSemenId], references: [id])
+
+  @@map("detail_produksi_fg")
+}
+
+// ==========================================
+// TRANSAKSI FG
+// ==========================================
+
+model TransaksiFG {
+  id           Int               @id @default(autoincrement())
+  nomorDokumen String            @unique
+  tanggal      DateTime
+  jenis        StatusTransaksiFG
+  jenisSemenId Int
+  jumlah       Float
+  satuan       String
+  customerId   Int?
+  nomorSJ      String?           // Surat Jalan
+  keterangan   String?           @db.Text
+  userId       Int
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  jenisSemen JenisSemen @relation(fields: [jenisSemenId], references: [id])
+  customer   Customer?  @relation(fields: [customerId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  approval   Approval?
+
+  @@map("transaksi_fg")
+}
+
+// ==========================================
+// APPROVAL
+// ==========================================
+
+model Approval {
+  id              Int            @id @default(autoincrement())
+  status          StatusApproval @default(PENDING)
+  catatan         String?        @db.Text
+  userId          Int
+  transaksiRMId   Int?           @unique
+  produksiId      Int?           @unique
+  transaksiFGId   Int?           @unique
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id])
+  transaksiRM TransaksiRM? @relation(fields: [transaksiRMId], references: [id])
+  produksi    Produksi?    @relation(fields: [produksiId], references: [id])
+  transaksiFG TransaksiFG? @relation(fields: [transaksiFGId], references: [id])
+
+  @@map("approvals")
+}
+
+// ==========================================
+// AUDIT LOG
+// ==========================================
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  aksi       String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT
+  modul      String   // USER, RM, PRODUKSI, FG, MASTER
+  deskripsi  String   @db.Text
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
