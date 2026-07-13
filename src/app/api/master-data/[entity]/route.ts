@@ -14,15 +14,15 @@ const modelMap: Record<Entity, any> = {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { entity: string } }
+  { params }: { params: Promise<{ entity: string }> }
 ) {
   const session = await auth();
   if (!session || (session.user as any).role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const entity = params.entity as Entity;
-  const model = modelMap[entity];
+  const { entity } = await params;
+  const model = modelMap[entity as Entity];
   if (!model) return NextResponse.json({ error: "Entity tidak valid" }, { status: 400 });
 
   const body = await req.json();
@@ -50,15 +50,15 @@ export async function POST(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { entity: string } }
+  { params }: { params: Promise<{ entity: string }> }
 ) {
   const session = await auth();
   if (!session || (session.user as any).role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const entity = params.entity as Entity;
-  const model = modelMap[entity];
+  const { entity } = await params;
+  const model = modelMap[entity as Entity];
   if (!model) return NextResponse.json({ error: "Entity tidak valid" }, { status: 400 });
 
   const body = await req.json();
@@ -84,15 +84,15 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { entity: string } }
+  { params }: { params: Promise<{ entity: string }> }
 ) {
   const session = await auth();
   if (!session || (session.user as any).role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const entity = params.entity as Entity;
-  const model = modelMap[entity];
+  const { entity } = await params;
+  const model = modelMap[entity as Entity];
   if (!model) return NextResponse.json({ error: "Entity tidak valid" }, { status: 400 });
 
   const { searchParams } = new URL(req.url);
