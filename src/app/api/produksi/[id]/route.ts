@@ -23,62 +23,77 @@ export async function PATCH(
   if (!produksi) return NextResponse.json({ error: "Data tidak ditemukan" }, { status: 404 });
 
   if (action === "approve" && role === "MANAGER") {
-    // Update status produksi
-    await prisma.produksi.update({
-      where: { id: Number(id) },
-      data: { status: "DISETUJUI" },
+  await prisma.produksi.update({
+    where: { id: Number(id) },
+    data: { status: "DISETUJUI" },
+  });
+
+  await prisma.approval.update({
+    where: { produksiId: Number(id) },
+    data: { status: "DISETUJUI", userId, catatan },
+  });
+
+  // Tambah stok FG + catat transaksi
+  for (const detail of produksi.detailFG) {
+    const gudangFG = await prisma.gudang.findFirst({
+      where: { tipe: "FG", aktif: true },
     });
 
-    // Update approval
-    await prisma.approval.update({
-      where: { produksiId: Number(id) },
-      data: { status: "DISETUJUI", userId, catatan },
-    });
-
-    // Tambah stok FG
-    for (const detail of produksi.detailFG) {
-      const gudangFG = await prisma.gudang.findFirst({
-        where: { tipe: "FG", aktif: true },
+    if (gudangFG) {
+      // Update stok
+      const existing = await prisma.stokFG.findUnique({
+        where: {
+          jenisSemenId_gudangId: {
+            jenisSemenId: detail.jenisSemenId,
+            gudangId: gudangFG.id,
+          },
+        },
       });
 
-      if (gudangFG) {
-        const existing = await prisma.stokFG.findUnique({
-          where: {
-            jenisSemenId_gudangId: {
-              jenisSemenId: detail.jenisSemenId,
-              gudangId: gudangFG.id,
-            },
+      if (existing) {
+        await prisma.stokFG.update({
+          where: { id: existing.id },
+          data: { jumlah: existing.jumlah + detail.jumlahOutput },
+        });
+      } else {
+        await prisma.stokFG.create({
+          data: {
+            jenisSemenId: detail.jenisSemenId,
+            gudangId: gudangFG.id,
+            jumlah: detail.jumlahOutput,
           },
         });
-
-        if (existing) {
-          await prisma.stokFG.update({
-            where: { id: existing.id },
-            data: { jumlah: existing.jumlah + detail.jumlahOutput },
-          });
-        } else {
-          await prisma.stokFG.create({
-            data: {
-              jenisSemenId: detail.jenisSemenId,
-              gudangId: gudangFG.id,
-              jumlah: detail.jumlahOutput,
-            },
-          });
-        }
       }
+
+      // Catat transaksi FG masuk
+      const nomorDokumen = `FG-IN/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, "0")}/${Math.floor(Math.random() * 9000) + 1000}`;
+
+      await prisma.transaksiFG.create({
+        data: {
+          nomorDokumen,
+          tanggal: new Date(),
+          jenis: "MASUK",
+          jenisSemenId: detail.jenisSemenId,
+          jumlah: detail.jumlahOutput,
+          satuan: detail.satuan,
+          keterangan: `Hasil produksi batch: ${produksi.nomorBatch}`,
+          userId,
+        },
+      });
     }
-
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        aksi: "UPDATE",
-        modul: "PRODUKSI",
-        deskripsi: `Approve produksi batch ID: ${id}`,
-      },
-    });
-
-    return NextResponse.json({ success: true, message: "Produksi disetujui, stok FG bertambah" });
   }
+
+  await prisma.auditLog.create({
+    data: {
+      userId,
+      aksi: "UPDATE",
+      modul: "PRODUKSI",
+      deskripsi: `Approve produksi batch ID: ${id}`,
+    },
+  });
+
+  return NextResponse.json({ success: true, message: "Produksi disetujui, stok FG bertambah" });
+}
 
   if (action === "reject") {
     await prisma.produksi.update({
