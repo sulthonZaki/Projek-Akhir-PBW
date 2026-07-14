@@ -227,6 +227,34 @@ CREATE TABLE `audit_logs` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `permintaan_bahan_baku` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `nomorPermintaan` VARCHAR(191) NOT NULL,
+    `tanggal` DATETIME(3) NOT NULL,
+    `keperluanProduksi` TEXT NOT NULL,
+    `status` ENUM('PENDING', 'DISETUJUI', 'DITOLAK', 'SELESAI') NOT NULL DEFAULT 'PENDING',
+    `catatanAdmin` TEXT NULL,
+    `userId` INTEGER NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `permintaan_bahan_baku_nomorPermintaan_key`(`nomorPermintaan`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `detail_permintaan_bahan_baku` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `permintaanId` INTEGER NOT NULL,
+    `jenisBahanBakuId` INTEGER NOT NULL,
+    `jumlah` DOUBLE NOT NULL,
+    `satuan` VARCHAR(191) NOT NULL,
+    `keterangan` VARCHAR(191) NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `stok_rm` ADD CONSTRAINT `stok_rm_jenisBahanBakuId_fkey` FOREIGN KEY (`jenisBahanBakuId`) REFERENCES `jenis_bahan_baku`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -286,3 +314,12 @@ ALTER TABLE `approvals` ADD CONSTRAINT `approvals_transaksiFGId_fkey` FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE `audit_logs` ADD CONSTRAINT `audit_logs_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `permintaan_bahan_baku` ADD CONSTRAINT `permintaan_bahan_baku_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `detail_permintaan_bahan_baku` ADD CONSTRAINT `detail_permintaan_bahan_baku_permintaanId_fkey` FOREIGN KEY (`permintaanId`) REFERENCES `permintaan_bahan_baku`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `detail_permintaan_bahan_baku` ADD CONSTRAINT `detail_permintaan_bahan_baku_jenisBahanBakuId_fkey` FOREIGN KEY (`jenisBahanBakuId`) REFERENCES `jenis_bahan_baku`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

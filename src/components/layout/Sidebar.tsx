@@ -38,12 +38,22 @@ const menuByRole: Record<Role, { label: string; href: string; icon: any }[]> = {
   ADMIN_RM: [
     { label: "Dashboard", href: "/admin-rm", icon: LayoutDashboard },
     { label: "Stok Bahan Baku", href: "/admin-rm/stok", icon: Package },
+    {
+      label: "Permintaan BB",
+      href: "/admin-rm/permintaan",
+      icon: ClipboardList,
+    },
     { label: "Barang Masuk", href: "/admin-rm/masuk", icon: ClipboardList },
     { label: "Barang Keluar", href: "/admin-rm/keluar", icon: ClipboardList },
     { label: "Laporan", href: "/admin-rm/laporan", icon: FileText },
   ],
   SUPERVISOR_PRODUKSI: [
     { label: "Dashboard", href: "/supervisor-produksi", icon: LayoutDashboard },
+    {
+      label: "Permintaan BB",
+      href: "/supervisor-produksi/permintaan",
+      icon: ClipboardList,
+    },
     {
       label: "Input Produksi",
       href: "/supervisor-produksi/input",
