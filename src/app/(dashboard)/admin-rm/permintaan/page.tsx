@@ -30,14 +30,8 @@ export default function PermintaanBBAdminRMPage() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState("PENDING");
-  const [toast, setToast] = useState<{
-    msg: string;
-    type: "success" | "error";
-  } | null>(null);
-  const [modal, setModal] = useState<{
-    type: "approve" | "reject";
-    item: any;
-  } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [modal, setModal] = useState<{ type: "approve" | "reject"; item: any } | null>(null);
   const [gudang, setGudang] = useState<any[]>([]);
   const [selectedGudang, setSelectedGudang] = useState("");
   const [catatan, setCatatan] = useState("");
@@ -59,34 +53,24 @@ export default function PermintaanBBAdminRMPage() {
     const permintaanData = await permintaanRes.json();
     const masterData = await masterRes.json();
     setPermintaan(permintaanData);
-    setGudang(
-      masterData.gudang?.filter((g: any) => g.aktif && g.tipe === "RM") || [],
-    );
+    setGudang(masterData.gudang?.filter((g: any) => g.aktif && g.tipe === "RM") || []);
     setLoading(false);
   }
 
-  useEffect(() => {
-    fetchData();
-  }, [filterStatus]);
+  useEffect(() => { fetchData(); }, [filterStatus]);
 
   async function handleAction(type: "approve" | "reject") {
     if (type === "approve" && !selectedGudang) {
       return showToast("Pilih gudang asal bahan baku", "error");
     }
-
     setSubmitting(true);
     const res = await fetch(`/api/permintaan-bb/${modal?.item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: type,
-        catatanAdmin: catatan,
-        gudangId: selectedGudang,
-      }),
+      body: JSON.stringify({ action: type, catatanAdmin: catatan, gudangId: selectedGudang }),
     });
     const data = await res.json();
     setSubmitting(false);
-
     if (!res.ok) return showToast(data.error || "Gagal memproses", "error");
     showToast(data.message);
     setModal(null);
@@ -97,242 +81,169 @@ export default function PermintaanBBAdminRMPage() {
 
   return (
     <div className="space-y-5">
+      {/* Toast */}
       {toast && (
-        <div
-          className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm flex items-center gap-2 ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`}
-        >
+        <div style={{
+          position: "fixed", top: "20px", right: "20px", zIndex: 50,
+          padding: "12px 16px", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          backgroundColor: toast.type === "success" ? "#22c55e" : "#ef4444",
+          color: "white", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px"
+        }}>
           {toast.msg}
-          <button onClick={() => setToast(null)}>
-            <X className="w-3 h-3" />
-          </button>
+          <button onClick={() => setToast(null)}><X style={{ width: 12, height: 12 }} /></button>
         </div>
       )}
 
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0f1729]">
-            Permintaan Bahan Baku
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Kelola permintaan bahan baku dari Supervisor Produksi
-          </p>
+          <h1 className="text-2xl font-bold text-[#0f1729]">Permintaan Bahan Baku</h1>
+          <p className="text-gray-500 text-sm mt-1">Kelola permintaan bahan baku dari Supervisor Produksi</p>
         </div>
         <div className="flex gap-2">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E8A020] bg-white"
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none bg-white"
           >
             <option value="">Semua Status</option>
             <option value="PENDING">Menunggu</option>
             <option value="SELESAI">Selesai</option>
             <option value="DITOLAK">Ditolak</option>
           </select>
-          <button
-            onClick={fetchData}
-            className="p-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-          >
+          <button onClick={fetchData} className="p-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
             <RefreshCw className="w-4 h-4 text-gray-500" />
           </button>
         </div>
       </div>
 
       {/* Alert pending */}
-      {permintaan.filter((p) => p.status === "PENDING").length > 0 &&
-        filterStatus === "PENDING" && (
-          <div className="bg-amber-50 border border-amber-100 rounded-xl px-5 py-3 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
-            <p className="text-sm text-amber-700">
-              Ada{" "}
-              <span className="font-semibold">
-                {permintaan.filter((p) => p.status === "PENDING").length}{" "}
-                permintaan
-              </span>{" "}
-              yang menunggu persetujuan kamu
-            </p>
-          </div>
-        )}
+      {permintaan.filter((p) => p.status === "PENDING").length > 0 && filterStatus === "PENDING" && (
+        <div style={{ backgroundColor: "#fffbeb", border: "1px solid #fde68a", borderRadius: "12px", padding: "12px 20px", display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#fbbf24", flexShrink: 0, display: "inline-block" }} />
+          <p style={{ fontSize: 14, color: "#b45309" }}>
+            Ada <strong>{permintaan.filter((p) => p.status === "PENDING").length} permintaan</strong> yang menunggu persetujuan kamu
+          </p>
+        </div>
+      )}
 
       {/* List */}
       <div className="space-y-3">
         {loading ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400 text-sm">
-            Memuat data...
-          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400 text-sm">Memuat data...</div>
         ) : permintaan.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400 text-sm">
-            {filterStatus === "PENDING"
-              ? "Tidak ada permintaan yang menunggu"
-              : "Tidak ada data permintaan"}
+            {filterStatus === "PENDING" ? "Tidak ada permintaan yang menunggu" : "Tidak ada data permintaan"}
           </div>
-        ) : (
-          permintaan.map((p: any) => (
-            <div
-              key={p.id}
-              className="bg-white rounded-xl border border-gray-100 overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-5 py-4">
-                <div
-                  className="flex-1 cursor-pointer"
-                  onClick={() => setExpanded(expanded === p.id ? null : p.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">
-                        {p.nomorPermintaan}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {formatDateTime(p.tanggal)} · dari {p.user.namaLengkap}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {p.keperluanProduksi}
-                      </p>
-                    </div>
-                  </div>
+        ) : permintaan.map((p: any) => (
+          <div key={p.id} style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #f3f4f6", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px" }}>
+              {/* Info + status */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "#111827", margin: 0 }}>{p.nomorPermintaan}</p>
+                  <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
+                    {formatDateTime(p.tanggal)} · dari {p.user.namaLengkap}
+                  </p>
+                  <p style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{p.keperluanProduksi}</p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span
-                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusBadge[p.status]}`}
-                  >
-                    {statusLabel[p.status]}
-                  </span>
-                  {p.status === "PENDING" && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setModal({ type: "approve", item: p });
-                          setCatatan("");
-                          setSelectedGudang("");
-                        }}
-                        className="flex items-center gap-1.5 text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition font-medium"
-                      >
-                        <CheckCircle className="w-3.5 h-3.5" /> Setujui
-                      </button>
-                      <button
-                        onClick={() => {
-                          setModal({ type: "reject", item: p });
-                          setCatatan("");
-                        }}
-                        className="flex items-center gap-1.5 text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition font-medium"
-                      >
-                        <XCircle className="w-3.5 h-3.5" /> Tolak
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={() => setExpanded(expanded === p.id ? null : p.id)}
-                  >
-                    {expanded === p.id ? (
-                      <ChevronUp className="w-4 h-4 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${statusBadge[p.status]}`}>
+                  {statusLabel[p.status]}
+                </span>
               </div>
 
-              {expanded === p.id && (
-                <div className="border-t border-gray-100 px-5 py-4">
-                  <p className="text-xs font-semibold text-gray-500 uppercase mb-3">
-                    Detail Bahan Baku yang Diminta
-                  </p>
-                  <div className="space-y-2">
-                    {p.details.map((d: any) => (
-                      <div
-                        key={d.id}
-                        className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2.5"
-                      >
-                        <p className="text-sm font-medium text-gray-800">
-                          {d.jenisBahanBaku.nama}
-                        </p>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-800">
-                            {d.jumlah} {d.satuan}
-                          </p>
-                          {d.keterangan && (
-                            <p className="text-xs text-gray-400">
-                              {d.keterangan}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {p.catatanAdmin && (
-                    <div
-                      className={`mt-3 p-3 rounded-lg text-xs ${p.status === "DITOLAK" ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"}`}
+              {/* Tombol aksi */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {p.status === "PENDING" && (
+                  <>
+                    <button
+                      onClick={() => { setModal({ type: "approve", item: p }); setCatatan(""); setSelectedGudang(""); }}
+                      style={{ backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
                     >
-                      <span className="font-semibold">Catatan kamu:</span>{" "}
-                      {p.catatanAdmin}
-                    </div>
-                  )}
-                </div>
-              )}
+                      <CheckCircle style={{ width: 14, height: 14 }} /> Setujui
+                    </button>
+                    <button
+                      onClick={() => { setModal({ type: "reject", item: p }); setCatatan(""); }}
+                      style={{ backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                    >
+                      <XCircle style={{ width: 14, height: 14 }} /> Tolak
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setExpanded(expanded === p.id ? null : p.id)}
+                  style={{ border: "1px solid #e5e7eb", backgroundColor: "white", borderRadius: "8px", padding: "6px 12px", fontSize: 12, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  {expanded === p.id ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
+                  {expanded === p.id ? "Sembunyikan" : "Lihat Detail"}
+                </button>
+              </div>
             </div>
-          ))
-        )}
+
+            {/* Detail */}
+            {expanded === p.id && (
+              <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px" }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>
+                  Detail Bahan Baku yang Diminta
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {p.details.map((d: any) => (
+                    <div key={d.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#f9fafb", borderRadius: 8, padding: "10px 16px" }}>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: "#111827", margin: 0 }}>{d.jenisBahanBaku.nama}</p>
+                      <div style={{ textAlign: "right" }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: "#111827", margin: 0 }}>{d.jumlah} {d.satuan}</p>
+                        {d.keterangan && <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>{d.keterangan}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {p.catatanAdmin && (
+                  <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, fontSize: 12, backgroundColor: p.status === "DITOLAK" ? "#fef2f2" : "#eff6ff", color: p.status === "DITOLAK" ? "#dc2626" : "#2563eb" }}>
+                    <strong>Catatan kamu:</strong> {p.catatanAdmin}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Modal Approve */}
       {modal?.type === "approve" && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-[#0f1729]">Setujui Permintaan</h3>
-              <button onClick={() => setModal(null)}>
-                <X className="w-5 h-5 text-gray-400" />
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ backgroundColor: "white", borderRadius: 12, width: "100%", maxWidth: 448, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <h3 style={{ fontWeight: 700, color: "#0f1729", margin: 0 }}>Setujui Permintaan</h3>
+              <button onClick={() => setModal(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <X style={{ width: 20, height: 20, color: "#9ca3af" }} />
               </button>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Menyetujui permintaan{" "}
-              <span className="font-semibold text-gray-800">
-                {modal.item.nomorPermintaan}
-              </span>
-              . Barang keluar akan otomatis tercatat di sistem.
+            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
+              Menyetujui permintaan <strong style={{ color: "#111827" }}>{modal.item.nomorPermintaan}</strong>. Barang keluar akan otomatis tercatat.
             </p>
-            <div className="space-y-4">
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">
-                  Gudang Asal
-                </label>
-                <select
-                  value={selectedGudang}
-                  onChange={(e) => setSelectedGudang(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E8A020] bg-white"
-                >
+                <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#4b5563", textTransform: "uppercase", marginBottom: 6 }}>Gudang Asal</label>
+                <select value={selectedGudang} onChange={(e) => setSelectedGudang(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, backgroundColor: "white" }}>
                   <option value="">Pilih gudang</option>
-                  {gudang.map((g: any) => (
-                    <option key={g.id} value={g.id}>
-                      {g.nama}
-                    </option>
-                  ))}
+                  {gudang.map((g: any) => <option key={g.id} value={g.id}>{g.nama}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">
-                  Catatan (opsional)
-                </label>
-                <textarea
-                  value={catatan}
-                  onChange={(e) => setCatatan(e.target.value)}
-                  placeholder="Catatan untuk supervisor..."
-                  rows={2}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E8A020] resize-none"
-                />
+                <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#4b5563", textTransform: "uppercase", marginBottom: 6 }}>Catatan (opsional)</label>
+                <textarea value={catatan} onChange={(e) => setCatatan(e.target.value)}
+                  placeholder="Catatan untuk supervisor..." rows={2}
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, resize: "none", boxSizing: "border-box" }} />
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setModal(null)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition"
-              >
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              <button onClick={() => setModal(null)}
+                style={{ flex: 1, padding: "10px 16px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, color: "#4b5563", backgroundColor: "white", cursor: "pointer" }}>
                 Batal
               </button>
-              <button
-                onClick={() => handleAction("approve")}
-                disabled={submitting}
-                className="flex-1 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-60"
-              >
+              <button onClick={() => handleAction("approve")} disabled={submitting}
+                style={{ flex: 1, padding: "10px 16px", borderRadius: 8, fontSize: 14, fontWeight: 500, color: "white", backgroundColor: "#22c55e", border: "none", cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
                 {submitting ? "Memproses..." : "Setujui & Keluarkan Barang"}
               </button>
             </div>
@@ -342,45 +253,30 @@ export default function PermintaanBBAdminRMPage() {
 
       {/* Modal Reject */}
       {modal?.type === "reject" && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-[#0f1729]">Tolak Permintaan</h3>
-              <button onClick={() => setModal(null)}>
-                <X className="w-5 h-5 text-gray-400" />
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ backgroundColor: "white", borderRadius: 12, width: "100%", maxWidth: 448, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <h3 style={{ fontWeight: 700, color: "#0f1729", margin: 0 }}>Tolak Permintaan</h3>
+              <button onClick={() => setModal(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <X style={{ width: 20, height: 20, color: "#9ca3af" }} />
               </button>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Tolak permintaan{" "}
-              <span className="font-semibold text-gray-800">
-                {modal.item.nomorPermintaan}
-              </span>{" "}
-              dari {modal.item.user.namaLengkap}.
+            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
+              Tolak permintaan <strong style={{ color: "#111827" }}>{modal.item.nomorPermintaan}</strong> dari {modal.item.user.namaLengkap}.
             </p>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">
-                Alasan Penolakan
-              </label>
-              <textarea
-                value={catatan}
-                onChange={(e) => setCatatan(e.target.value)}
-                placeholder="Berikan alasan penolakan..."
-                rows={3}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E8A020] resize-none"
-              />
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#4b5563", textTransform: "uppercase", marginBottom: 6 }}>Alasan Penolakan</label>
+              <textarea value={catatan} onChange={(e) => setCatatan(e.target.value)}
+                placeholder="Berikan alasan penolakan..." rows={3}
+                style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, resize: "none", boxSizing: "border-box" }} />
             </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setModal(null)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition"
-              >
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              <button onClick={() => setModal(null)}
+                style={{ flex: 1, padding: "10px 16px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, color: "#4b5563", backgroundColor: "white", cursor: "pointer" }}>
                 Batal
               </button>
-              <button
-                onClick={() => handleAction("reject")}
-                disabled={submitting}
-                className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-60"
-              >
+              <button onClick={() => handleAction("reject")} disabled={submitting}
+                style={{ flex: 1, padding: "10px 16px", borderRadius: 8, fontSize: 14, fontWeight: 500, color: "white", backgroundColor: "#ef4444", border: "none", cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
                 {submitting ? "Memproses..." : "Tolak Permintaan"}
               </button>
             </div>

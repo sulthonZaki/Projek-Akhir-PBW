@@ -4,18 +4,18 @@ import { useEffect, useState } from "react";
 import { CheckCircle, XCircle, ChevronDown, ChevronUp, RefreshCw, X } from "lucide-react";
 import { formatDateTime, formatNumber } from "@/lib/utils";
 
-const statusBadge: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-600",
-  MENUNGGU_APPROVAL: "bg-amber-100 text-amber-700",
-  DISETUJUI: "bg-green-100 text-green-700",
-  DITOLAK: "bg-red-100 text-red-700",
-};
-
 const statusLabel: Record<string, string> = {
   DRAFT: "Draft",
   MENUNGGU_APPROVAL: "Menunggu Approval",
   DISETUJUI: "Disetujui",
   DITOLAK: "Ditolak",
+};
+
+const statusColor: Record<string, { bg: string; color: string }> = {
+  DRAFT: { bg: "#f3f4f6", color: "#4b5563" },
+  MENUNGGU_APPROVAL: { bg: "#fef3c7", color: "#92400e" },
+  DISETUJUI: { bg: "#dcfce7", color: "#166534" },
+  DITOLAK: { bg: "#fee2e2", color: "#991b1b" },
 };
 
 export default function ApprovalPage() {
@@ -60,108 +60,132 @@ export default function ApprovalPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Toast */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm flex items-center gap-2 ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`}>
-          {toast.msg}<button onClick={() => setToast(null)}><X className="w-3 h-3" /></button>
+        <div style={{
+          position: "fixed", top: 20, right: 20, zIndex: 50,
+          padding: "12px 16px", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          backgroundColor: toast.type === "success" ? "#22c55e" : "#ef4444",
+          color: "white", fontSize: 14, display: "flex", alignItems: "center", gap: 8
+        }}>
+          {toast.msg}
+          <button onClick={() => setToast(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "white" }}>
+            <X style={{ width: 12, height: 12 }} />
+          </button>
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <h1 className="text-2xl font-bold text-[#0f1729]">Approval Produksi</h1>
-          <p className="text-gray-500 text-sm mt-1">Review dan setujui hasil produksi dari Supervisor</p>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#0f1729", margin: 0 }}>Approval Produksi</h1>
+          <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>Review dan setujui hasil produksi dari Supervisor</p>
         </div>
-        <div className="flex gap-2">
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E8A020] bg-white">
+        <div style={{ display: "flex", gap: 8 }}>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={{ padding: "8px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, backgroundColor: "white" }}
+          >
             <option value="MENUNGGU_APPROVAL">Menunggu Approval</option>
             <option value="DISETUJUI">Disetujui</option>
             <option value="DITOLAK">Ditolak</option>
             <option value="">Semua</option>
           </select>
-          <button onClick={fetchData} className="p-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-            <RefreshCw className="w-4 h-4 text-gray-500" />
+          <button onClick={fetchData}
+            style={{ padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, backgroundColor: "white", cursor: "pointer" }}>
+            <RefreshCw style={{ width: 16, height: 16, color: "#6b7280" }} />
           </button>
         </div>
       </div>
 
-      <div className="space-y-3">
+      {/* List */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {loading ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400 text-sm">Memuat data...</div>
+          <div style={{ backgroundColor: "white", borderRadius: 12, border: "1px solid #f3f4f6", padding: 48, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+            Memuat data...
+          </div>
         ) : produksi.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400 text-sm">
+          <div style={{ backgroundColor: "white", borderRadius: 12, border: "1px solid #f3f4f6", padding: 48, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
             Tidak ada produksi yang perlu di-review
           </div>
         ) : produksi.map((p: any) => (
-          <div key={p.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-800">{p.nomorBatch}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+          <div key={p.id} style={{ backgroundColor: "white", borderRadius: 12, border: "1px solid #f3f4f6", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px" }}>
+              {/* Info + status */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "#111827", margin: 0 }}>{p.nomorBatch}</p>
+                  <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
                     {formatDateTime(p.tanggalMulai)} · oleh {p.user.namaLengkap}
                   </p>
                   {p.totalOutputKg && (
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Output: <span className="font-medium">{formatNumber(p.totalOutputKg)} kg</span>
-                      {p.efisiensi && <span className="ml-2 text-blue-500">{p.efisiensi}% efisiensi</span>}
+                    <p style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                      Output: <strong>{formatNumber(p.totalOutputKg)} kg</strong>
+                      {p.efisiensi && <span style={{ marginLeft: 8, color: "#3b82f6" }}>{p.efisiensi}% efisiensi</span>}
                     </p>
                   )}
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${statusBadge[p.status]}`}>
+                <span style={{
+                  fontSize: 11, padding: "4px 10px", borderRadius: 999, fontWeight: 500, flexShrink: 0,
+                  backgroundColor: statusColor[p.status]?.bg || "#f3f4f6",
+                  color: statusColor[p.status]?.color || "#4b5563"
+                }}>
                   {statusLabel[p.status]}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Tombol aksi */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {p.status === "MENUNGGU_APPROVAL" && (
                   <>
                     <button
                       onClick={() => { setModal({ type: "approve", item: p }); setCatatan(""); }}
-                      className="flex items-center gap-1.5 text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition font-medium"
+                      style={{ backgroundColor: "#22c55e", color: "white", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
                     >
-                      <CheckCircle className="w-3.5 h-3.5" /> Setujui
+                      <CheckCircle style={{ width: 14, height: 14 }} /> Setujui
                     </button>
                     <button
                       onClick={() => { setModal({ type: "reject", item: p }); setCatatan(""); }}
-                      className="flex items-center gap-1.5 text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition font-medium"
+                      style={{ backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
                     >
-                      <XCircle className="w-3.5 h-3.5" /> Tolak
+                      <XCircle style={{ width: 14, height: 14 }} /> Tolak
                     </button>
                   </>
                 )}
                 <button
                   onClick={() => setExpanded(expanded === p.id ? null : p.id)}
-                  className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition"
+                  style={{ border: "1px solid #e5e7eb", backgroundColor: "white", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
                 >
-                  {expanded === p.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  {expanded === p.id ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
                   {expanded === p.id ? "Sembunyikan" : "Lihat Detail"}
                 </button>
               </div>
             </div>
 
+            {/* Detail */}
             {expanded === p.id && (
-              <div className="border-t border-gray-100 px-5 py-4">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+              <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
                   <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Bahan Baku Terpakai</p>
-                    <div className="space-y-1.5">
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Bahan Baku Terpakai</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                       {p.detailRM.map((d: any) => (
-                        <div key={d.id} className="flex justify-between text-sm">
-                          <span className="text-gray-600">{d.jenisBahanBaku.nama}</span>
-                          <span className="font-medium">{formatNumber(d.jumlahTerpakai)} {d.satuan}</span>
+                        <div key={d.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
+                          <span style={{ color: "#4b5563" }}>{d.jenisBahanBaku.nama}</span>
+                          <span style={{ fontWeight: 500 }}>{formatNumber(d.jumlahTerpakai)} {d.satuan}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Output Semen</p>
-                    <div className="space-y-1.5">
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Output Semen</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                       {p.detailFG.map((d: any) => (
-                        <div key={d.id} className="flex justify-between text-sm">
-                          <span className="text-gray-600">{d.jenisSemen.nama}</span>
-                          <span className="font-medium">{formatNumber(d.jumlahOutput)} {d.satuan}</span>
+                        <div key={d.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
+                          <span style={{ color: "#4b5563" }}>{d.jenisSemen.nama}</span>
+                          <span style={{ fontWeight: 500 }}>{formatNumber(d.jumlahOutput)} {d.satuan}</span>
                         </div>
                       ))}
                     </div>
@@ -169,13 +193,16 @@ export default function ApprovalPage() {
                 </div>
 
                 {p.catatan && (
-                  <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
+                  <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 12, paddingTop: 12, borderTop: "1px solid #f3f4f6" }}>
                     Catatan Supervisor: {p.catatan}
                   </p>
                 )}
 
                 {p.approval && p.approval.status !== "PENDING" && (
-                  <div className={`mt-3 pt-3 border-t border-gray-100 text-xs ${p.approval.status === "DISETUJUI" ? "text-green-600" : "text-red-600"}`}>
+                  <div style={{
+                    marginTop: 12, paddingTop: 12, borderTop: "1px solid #f3f4f6", fontSize: 12,
+                    color: p.approval.status === "DISETUJUI" ? "#16a34a" : "#dc2626"
+                  }}>
                     {p.approval.status === "DISETUJUI" ? "✓ Disetujui" : "✗ Ditolak"}
                     {p.approval.catatan && ` — ${p.approval.catatan}`}
                   </div>
@@ -188,29 +215,30 @@ export default function ApprovalPage() {
 
       {/* Modal Approve */}
       {modal?.type === "approve" && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-[#0f1729]">Setujui Produksi</h3>
-              <button onClick={() => setModal(null)}><X className="w-5 h-5 text-gray-400" /></button>
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ backgroundColor: "white", borderRadius: 12, width: "100%", maxWidth: 448, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <h3 style={{ fontWeight: 700, color: "#0f1729", margin: 0 }}>Setujui Produksi</h3>
+              <button onClick={() => setModal(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <X style={{ width: 20, height: 20, color: "#9ca3af" }} />
+              </button>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Menyetujui batch <span className="font-semibold text-gray-800">{modal.item.nomorBatch}</span>.
-              Stok semen FG akan otomatis bertambah.
+            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
+              Menyetujui batch <strong style={{ color: "#111827" }}>{modal.item.nomorBatch}</strong>. Stok semen FG akan otomatis bertambah.
             </p>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Catatan (opsional)</label>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#4b5563", textTransform: "uppercase", marginBottom: 6 }}>Catatan (opsional)</label>
               <textarea value={catatan} onChange={(e) => setCatatan(e.target.value)}
                 placeholder="Catatan approval..." rows={2}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E8A020] resize-none" />
+                style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, resize: "none", boxSizing: "border-box" }} />
             </div>
-            <div className="flex gap-3 mt-6">
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <button onClick={() => setModal(null)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
+                style={{ flex: 1, padding: "10px 16px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, color: "#4b5563", backgroundColor: "white", cursor: "pointer" }}>
                 Batal
               </button>
               <button onClick={() => handleAction("approve")} disabled={submitting}
-                className="flex-1 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-60">
+                style={{ flex: 1, padding: "10px 16px", borderRadius: 8, fontSize: 14, fontWeight: 500, color: "white", backgroundColor: "#22c55e", border: "none", cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
                 {submitting ? "Memproses..." : "Setujui & Tambah Stok FG"}
               </button>
             </div>
@@ -220,29 +248,30 @@ export default function ApprovalPage() {
 
       {/* Modal Reject */}
       {modal?.type === "reject" && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-[#0f1729]">Tolak Produksi</h3>
-              <button onClick={() => setModal(null)}><X className="w-5 h-5 text-gray-400" /></button>
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ backgroundColor: "white", borderRadius: 12, width: "100%", maxWidth: 448, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <h3 style={{ fontWeight: 700, color: "#0f1729", margin: 0 }}>Tolak Produksi</h3>
+              <button onClick={() => setModal(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <X style={{ width: 20, height: 20, color: "#9ca3af" }} />
+              </button>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Tolak batch <span className="font-semibold text-gray-800">{modal.item.nomorBatch}</span>.
-              Stok FG tidak akan bertambah.
+            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
+              Tolak batch <strong style={{ color: "#111827" }}>{modal.item.nomorBatch}</strong>. Stok FG tidak akan bertambah.
             </p>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Alasan Penolakan</label>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#4b5563", textTransform: "uppercase", marginBottom: 6 }}>Alasan Penolakan</label>
               <textarea value={catatan} onChange={(e) => setCatatan(e.target.value)}
                 placeholder="Berikan alasan penolakan..." rows={3}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E8A020] resize-none" />
+                style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, resize: "none", boxSizing: "border-box" }} />
             </div>
-            <div className="flex gap-3 mt-6">
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <button onClick={() => setModal(null)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
+                style={{ flex: 1, padding: "10px 16px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, color: "#4b5563", backgroundColor: "white", cursor: "pointer" }}>
                 Batal
               </button>
               <button onClick={() => handleAction("reject")} disabled={submitting}
-                className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-60">
+                style={{ flex: 1, padding: "10px 16px", borderRadius: 8, fontSize: 14, fontWeight: 500, color: "white", backgroundColor: "#ef4444", border: "none", cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
                 {submitting ? "Memproses..." : "Tolak Produksi"}
               </button>
             </div>
